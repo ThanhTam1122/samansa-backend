@@ -1,6 +1,6 @@
-# Rails でサブスクリプションを管理するシステムを実装してください
+# サブスクリプション管理システムの実装
 
-動画配信サービスにおける定期購読の開始・更新・解約を管理する API を実装してください
+動画配信サービスにおける定期購読の開始・更新・解約を管理する API を Ruby on Rails 実装してください
 
 実務に耐えうる設計・実装（拡張性・分析可能性・冪等性・スケーラビリティ等）を意識し、README に設計の概要や工夫したポイントを記載してください（日本語もしくは英語）
 
@@ -17,11 +17,13 @@
 
 ```json
 {
-  "platform": "Apple",
   "transaction_id": "string",
   "product_id": "string"
 }
 ```
+
+- transaction_id: サブスクリプションを一意に識別する ID。同じサブスクリプションなら自動更新されても同じ値
+- product_id: サブスクリプションプランの ID。例：com.samansa.subscription.monthly
 
 この時点では仮開始。Apple Webhook 到着で本開始。仮開始中は視聴不可。
 
@@ -29,13 +31,13 @@
 
 ```json
 {
-  type: 'PURCHASE' 'RENEW' 'CANCEL',
-  transaction_id: 'string',
-  product_id: 'string',
-  amount: '3.9',
-  currency: 'USD',
-  purchase_date: '2025-10-01T12:00:00Z',
-  expires_date: '2025-11-01T12:00:00Z',
+  "type": "PURCHASE" "RENEW" "CANCEL",
+  "transaction_id": "string",
+  "product_id": "string",
+  "amount": "3.9",
+  "currency": "USD",
+  "purchase_date": "2025-10-01T12:00:00Z",
+  "expires_date": "2025-11-01T12:00:00Z",
 }
 ```
 
