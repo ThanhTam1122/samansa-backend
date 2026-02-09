@@ -1,12 +1,18 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+  # Swagger UI
+  mount Rswag::Ui::Engine => "/api-docs"
+  mount Rswag::Api::Engine => "/api-docs"
 
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
+  # Health check
   get "up" => "rails/health#show", as: :rails_health_check
 
   namespace :api do
-    resources :subscriptions, only: [:create, :show]
+    # POST /api/subscriptions       - Provisionally start a subscription after client-side purchase
+    # GET  /api/subscriptions/:id    - Get user's subscriptions (user_id as :id)
+    resources :subscriptions, only: [:create]
+    get "subscriptions/:user_id", to: "subscriptions#show", as: :subscription
+
+    # POST /api/webhooks/apple       - Receive Apple Server Notifications
     post "webhooks/apple", to: "webhooks#apple"
   end
 end
