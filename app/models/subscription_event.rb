@@ -3,7 +3,7 @@ class SubscriptionEvent < ApplicationRecord
   RENEW    = "RENEW".freeze
   CANCEL   = "CANCEL".freeze
 
-  EVENT_TYPES = [PURCHASE, RENEW, CANCEL].freeze
+  EVENT_TYPES = [ PURCHASE, RENEW, CANCEL ].freeze
 
   belongs_to :subscription, primary_key: :transaction_id, foreign_key: :transaction_id, optional: true
 

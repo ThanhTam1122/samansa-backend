@@ -4,7 +4,7 @@ class Subscription < ApplicationRecord
   ACTIVE    = "active".freeze    # Apple confirmed via PURCHASE/RENEW webhook
   CANCELLED = "cancelled".freeze # Apple sent CANCEL webhook; access until expires_date
 
-  STATUSES = [PENDING, ACTIVE, CANCELLED].freeze
+  STATUSES = [ PENDING, ACTIVE, CANCELLED ].freeze
 
   has_many :subscription_events, primary_key: :transaction_id, foreign_key: :transaction_id
 

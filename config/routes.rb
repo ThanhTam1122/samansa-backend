@@ -9,7 +9,7 @@ Rails.application.routes.draw do
   namespace :api do
     # POST /api/subscriptions       - Provisionally start a subscription after client-side purchase
     # GET  /api/subscriptions/:id    - Get user's subscriptions (user_id as :id)
-    resources :subscriptions, only: [:create]
+    resources :subscriptions, only: [ :create ]
     get "subscriptions/:user_id", to: "subscriptions#show", as: :subscription
 
     # POST /api/webhooks/apple       - Receive Apple Server Notifications

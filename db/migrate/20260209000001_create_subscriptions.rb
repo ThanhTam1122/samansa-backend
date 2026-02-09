@@ -15,7 +15,7 @@ class CreateSubscriptions < ActiveRecord::Migration[8.1]
 
     add_index :subscriptions, :transaction_id, unique: true
     add_index :subscriptions, :user_id
-    add_index :subscriptions, [:user_id, :status]
+    add_index :subscriptions, [ :user_id, :status ]
     add_index :subscriptions, :expires_date
   end
 end
