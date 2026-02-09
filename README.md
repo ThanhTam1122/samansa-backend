@@ -1,57 +1,57 @@
-# Movie Store — Subscription Management API
+# Movie Store — サブスクリプション管理API
 
-A Ruby on Rails API that manages Apple In-App Purchase subscriptions for a video streaming service. Handles the full subscription lifecycle: provisional start from the client, activation/renewal/cancellation via Apple Server-to-Server Webhooks.
+動画ストリーミングサービス向けのAppleアプリ内課金サブスクリプションを管理するRuby on Rails APIです。クライアントからの仮登録、Apple Server-to-Server Webhookによる有効化・更新・キャンセルまで、サブスクリプションのライフサイクル全体を処理します。
 
-## Architecture Overview
+## アーキテクチャ概要
 
 ```
 ┌──────────┐   POST /api/subscriptions    ┌──────────────┐
-│  Client   │ ──────────────────────────► │              │
-│   App     │   (after Apple purchase)    │  Rails API   │
+│ クライアント│ ──────────────────────────► │              │
+│   アプリ   │   (Apple購入後)             │  Rails API   │
 └──────────┘                              │              │
                                           │  ┌────────┐  │     ┌─────────┐
 ┌──────────┐   POST /api/webhooks/apple   │  │ MySQL  │  │     │ Swagger │
 │  Apple    │ ──────────────────────────► │  │   DB   │  │     │   UI    │
-│  Server   │   (PURCHASE/RENEW/CANCEL)   │  └────────┘  │     │/api-docs│
+│ サーバー   │   (PURCHASE/RENEW/CANCEL)   │  └────────┘  │     │/api-docs│
 └──────────┘                              └──────────────┘     └─────────┘
 ```
 
-## Subscription Lifecycle
+## サブスクリプションのライフサイクル
 
 ```
-  Client purchase
+  クライアント購入
         │
         ▼
     ┌─────────┐   Apple PURCHASE    ┌────────┐   Apple RENEW    ┌────────┐
     │ pending  │ ─────────────────► │ active │ ───────────────► │ active │
     └─────────┘                     └────────┘                  └────────┘
-    (not viewable)                  (viewable)                  (viewable, new period)
+    (視聴不可)                      (視聴可能)                  (視聴可能、新しい期間)
                                         │
                                         │ Apple CANCEL
                                         ▼
                                    ┌───────────┐
                                    │ cancelled │
                                    └───────────┘
-                                   (viewable until expires_date)
+                                   (expires_dateまで視聴可能)
 ```
 
-- **pending** — Client reported a purchase, awaiting Apple webhook confirmation. Not viewable.
-- **active** — Apple confirmed via PURCHASE or RENEW webhook. Viewable.
-- **cancelled** — Apple sent a CANCEL webhook. Still viewable until `expires_date`.
+- **pending** — クライアントが購入を報告済み、Apple Webhookの確認待ち。視聴不可。
+- **active** — AppleがPURCHASEまたはRENEW Webhookで確認済み。視聴可能。
+- **cancelled** — AppleがCANCEL Webhookを送信。`expires_date`まで視聴可能。
 
-## API Endpoints
+## APIエンドポイント
 
-| Method | Path | Description |
+| メソッド | パス | 説明 |
 |--------|------|-------------|
-| `POST` | `/api/subscriptions` | Provisionally start a subscription after client-side purchase |
-| `GET` | `/api/subscriptions/:user_id` | Get all subscriptions for a user |
-| `POST` | `/api/webhooks/apple` | Receive Apple Server-to-Server Notifications |
+| `POST` | `/api/subscriptions` | クライアント側の購入後にサブスクリプションを仮登録する |
+| `GET` | `/api/subscriptions/:user_id` | ユーザーの全サブスクリプションを取得する |
+| `POST` | `/api/webhooks/apple` | Apple Server-to-Server通知を受信する |
 
-Interactive API documentation is available at `/api-docs` (Swagger UI).
+対話型APIドキュメントは `/api-docs`（Swagger UI）で利用できます。
 
 ### POST /api/subscriptions
 
-Called by the client app after Apple In-App Purchase completes.
+Appleアプリ内課金の完了後にクライアントアプリから呼び出されます。
 
 ```json
 {
@@ -63,11 +63,11 @@ Called by the client app after Apple In-App Purchase completes.
 }
 ```
 
-Returns `201 Created` for new subscriptions, `200 OK` if transaction_id already exists (idempotent).
+新規サブスクリプションの場合は `201 Created`、transaction_idが既に存在する場合は `200 OK` を返します（冪等性）。
 
 ### POST /api/webhooks/apple
 
-Receives Apple Server Notifications for subscription lifecycle events.
+サブスクリプションのライフサイクルイベントに関するAppleサーバー通知を受信します。
 
 ```json
 {
@@ -84,114 +84,114 @@ Receives Apple Server Notifications for subscription lifecycle events.
 }
 ```
 
-Supported types: `PURCHASE` (activate), `RENEW` (extend period), `CANCEL` (mark cancelled).
+対応タイプ: `PURCHASE`（有効化）、`RENEW`（期間延長）、`CANCEL`（キャンセル処理）。
 
-## Database Design
+## データベース設計
 
 ### subscriptions
 
-The main table tracking each user's subscription state.
+各ユーザーのサブスクリプション状態を追跡するメインテーブルです。
 
-| Column | Type | Description |
+| カラム | 型 | 説明 |
 |--------|------|-------------|
-| `user_id` | string | User identifier |
-| `transaction_id` | string | Apple transaction ID (unique) |
-| `product_id` | string | Subscription plan ID |
-| `status` | string | `pending`, `active`, or `cancelled` |
-| `purchase_date` | datetime | Current period start (set by webhook) |
-| `expires_date` | datetime | Current period end / next renewal (set by webhook) |
-| `amount` | decimal | Charge amount |
-| `currency` | string | Currency code |
+| `user_id` | string | ユーザー識別子 |
+| `transaction_id` | string | AppleトランザクションID（一意） |
+| `product_id` | string | サブスクリプションプランID |
+| `status` | string | `pending`、`active`、または `cancelled` |
+| `purchase_date` | datetime | 現在の期間の開始日（Webhookで設定） |
+| `expires_date` | datetime | 現在の期間の終了日 / 次回更新日（Webhookで設定） |
+| `amount` | decimal | 課金額 |
+| `currency` | string | 通貨コード |
 
-Indexes: unique on `transaction_id`, composite on `(user_id, status)`, on `expires_date`.
+インデックス: `transaction_id`にユニーク、`(user_id, status)`に複合インデックス、`expires_date`にインデックス。
 
 ### subscription_events
 
-Immutable audit log of every Apple webhook notification received.
+受信した全てのApple Webhook通知の不変な監査ログです。
 
-| Column | Type | Description |
+| カラム | 型 | 説明 |
 |--------|------|-------------|
-| `notification_uuid` | string | Apple notification ID (unique, for idempotency) |
-| `transaction_id` | string | Links to subscription |
-| `event_type` | string | `PURCHASE`, `RENEW`, or `CANCEL` |
-| `product_id` | string | Plan ID |
-| `amount` / `currency` | decimal/string | Charge details |
-| `purchase_date` / `expires_date` | datetime | Period info |
-| `processed_at` | datetime | When the event was processed |
+| `notification_uuid` | string | Apple通知ID（一意、冪等性のため） |
+| `transaction_id` | string | サブスクリプションへの紐付け |
+| `event_type` | string | `PURCHASE`、`RENEW`、または `CANCEL` |
+| `product_id` | string | プランID |
+| `amount` / `currency` | decimal/string | 課金詳細 |
+| `purchase_date` / `expires_date` | datetime | 期間情報 |
+| `processed_at` | datetime | イベントが処理された日時 |
 
-## Design Decisions
+## 設計方針
 
-### Idempotency
+### 冪等性
 
-- **Client endpoint**: Duplicate `POST /api/subscriptions` with the same `transaction_id` returns the existing record instead of creating a duplicate. Enforced by a DB unique index.
-- **Webhook endpoint**: Duplicate `notification_uuid` is detected and safely returns `200 OK` with `"already_processed"`. Both application-level check and DB unique constraint guard against race conditions.
+- **クライアントエンドポイント**: 同じ `transaction_id` で `POST /api/subscriptions` を重複送信した場合、重複作成せずに既存のレコードを返します。DBのユニークインデックスで担保されています。
+- **Webhookエンドポイント**: 重複する `notification_uuid` を検出し、安全に `200 OK`（`"already_processed"`）を返します。アプリケーションレベルのチェックとDBユニーク制約の両方で競合状態を防止します。
 
-### Two-Phase Activation
+### 二段階有効化
 
-Subscriptions start as `pending` (not viewable) when created from the client. They only become `active` (viewable) when Apple confirms via a PURCHASE webhook. This prevents users from gaining access before payment is verified by Apple.
+サブスクリプションはクライアントから作成された時点では `pending`（視聴不可）として開始します。AppleがPURCHASE Webhookで確認した場合にのみ `active`（視聴可能）になります。これにより、Appleが支払いを確認する前にユーザーがアクセスすることを防止します。
 
-### Grace Period on Cancellation
+### キャンセル時の猶予期間
 
-Cancelled subscriptions remain viewable until `expires_date`. The `viewable?` method checks both status and expiry, so users retain access for the period they've already paid for.
+キャンセルされたサブスクリプションは `expires_date` まで視聴可能のまま維持されます。`viewable?` メソッドはステータスと有効期限の両方をチェックするため、ユーザーは既に支払った期間のアクセスを保持できます。
 
-### Event Sourcing (Audit Trail)
+### イベントソーシング（監査証跡）
 
-Every webhook notification is recorded in `subscription_events` as an immutable log. This enables:
-- Debugging payment issues
-- Revenue analytics (amount/currency per event)
-- Reconstructing subscription history
+全てのWebhook通知は `subscription_events` に不変のログとして記録されます。これにより以下が可能になります:
+- 決済問題のデバッグ
+- 収益分析（イベントごとの金額/通貨）
+- サブスクリプション履歴の再構築
 
-### Transactional Consistency
+### トランザクションの整合性
 
-Webhook processing uses `ActiveRecord::Base.transaction` to ensure the event record and subscription state update are atomic — either both succeed or neither does.
+Webhook処理は `ActiveRecord::Base.transaction` を使用し、イベントレコードとサブスクリプション状態の更新がアトミックであることを保証します — 両方が成功するか、どちらも実行されないかのいずれかです。
 
-### Scalability Considerations
+### スケーラビリティに関する考慮事項
 
-- Database indexes on frequently queried columns (`user_id`, `transaction_id`, `expires_date`)
-- Composite index on `(user_id, status)` for efficient user subscription lookups
-- Stateless API design — can be horizontally scaled behind a load balancer
-- DB-level unique constraints handle race conditions without distributed locks
+- 頻繁にクエリされるカラム（`user_id`、`transaction_id`、`expires_date`）へのデータベースインデックス
+- ユーザーのサブスクリプション検索を効率化する `(user_id, status)` の複合インデックス
+- ステートレスなAPI設計 — ロードバランサーの背後で水平スケーリングが可能
+- DBレベルのユニーク制約が分散ロックなしで競合状態を処理
 
-## Tech Stack
+## 技術スタック
 
-- **Ruby on Rails** 8.1 (API mode)
-- **MySQL** 8.0 (via Docker)
-- **rswag** for Swagger/OpenAPI documentation
+- **Ruby on Rails** 8.1（APIモード）
+- **MySQL** 8.0（Docker経由）
+- **rswag** Swagger/OpenAPIドキュメント生成用
 
-## Getting Started
+## はじめに
 
-### Prerequisites
+### 前提条件
 
-- Ruby 3.4+
+- Ruby 3.4以上
 - Docker & Docker Compose
-- `libmysqlclient-dev` (`sudo apt-get install libmysqlclient-dev`)
+- `libmysqlclient-dev`（`sudo apt-get install libmysqlclient-dev`）
 
-### Setup
+### セットアップ
 
 ```bash
-# Start MySQL
-cd movie-store
+# MySQLを起動
+cd samansa-backend
 docker compose up -d
 
-# Install dependencies
+# 依存関係をインストール
 bundle install
 
-# Create and migrate database
+# データベースを作成・マイグレーション
 bin/rails db:create db:migrate
 
-# Start the server
+# サーバーを起動
 bin/rails server
 ```
 
-### Generate Swagger Documentation
+### Swaggerドキュメントの生成
 
 ```bash
 bundle exec rake rswag:specs:swaggerize
 ```
 
-Then visit http://localhost:3000/api-docs for the interactive API documentation.
+http://localhost:3000/api-docs にアクセスすると、対話型APIドキュメントを利用できます。
 
-### Run Tests
+### テストの実行
 
 ```bash
 bundle exec rspec
