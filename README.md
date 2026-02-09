@@ -33,6 +33,7 @@
 
 ```json
 {
+  "notification_uuid": "string",
   "type": "PURCHASE" "RENEW" "CANCEL",
   "transaction_id": "string",
   "product_id": "string",
@@ -43,6 +44,7 @@
 }
 ```
 
+- notification_uuid: 通知ごとに一意の値
 - type: 通知の種類。PURCHASE は新規購入、RENEW は自動更新、CANCEL は解約
 - transaction_id: サブスクリプションを一意に識別する ID。同じサブスクリプションなら自動更新されても同じ値
 - product_id: サブスクリプションプランの ID。例：com.samansa.subscription.monthly
